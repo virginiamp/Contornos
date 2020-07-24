@@ -1,3 +1,8 @@
+"""
+Autor: Virginia Martins Perozim
+Versão: 1.0
+"""
+
 import cv2
 from tkinter import *
 import tkinter.filedialog as fdlg
@@ -83,6 +88,7 @@ def desfaz():
 
     # desabilita
     var_sc.set(gmin)
+    var_sc_max.set(gmin)
     habilita_desabilita_frame(frame_sb, 0)  # desbilita barra deslizante de contornos
     habilita_desabilita_menu(op_fer_desfazer, 0)  # desbilita menu Ferramentas/Desfazer
 
@@ -189,11 +195,11 @@ def help_window():
     habilita_desabilita_frame(frame_ja, 1)          # habilita janela Ajuda
     habilita_desabilita_menu(op_aju_fechar, 1)      # habilita Menu Ajuda/Fechar
 
-    tajuda = PhotoImage(file='janela_ajuda_nova.png')
-    h = tajuda.height() + 10
-    w = tajuda.width() + 10
-    canvas_help.config(scrollregion=(0, 0, w, h))
-    canvas_help.create_image(0, 0, anchor='nw', image=tajuda)
+    tajuda = PhotoImage(file='ajuda.png')
+    h = tajuda.height()
+    w = tajuda.width()
+    canvas_help.create_image(0, 30, anchor='nw', image=tajuda)
+    canvas_help.config(scrollregion=(0, 0, w + 10, h + 10))
     bt_help.place(x=480, y=4)
 
 
@@ -219,9 +225,20 @@ def contornos_cor(n):
     global hab_desab_filtro
 
     if hab_desab_filtro[0] == 1:
-        canny_threshold_cor(gmin, var_sc.get())
+        canny_threshold_cor(var_sc.get(), var_sc_max.get())
     elif hab_desab_filtro[1] == 1:
-        canny_threshold_pb(gmin, var_sc.get())
+        canny_threshold_pb(var_sc.get(), var_sc_max.get())
+
+
+# --------------------------------------------------------------------------------------------------------------------
+def contornos_cor_max(n1):
+
+    global hab_desab_filtro
+
+    if hab_desab_filtro[0] == 1:
+        canny_threshold_cor(var_sc.get(), var_sc_max.get())
+    elif hab_desab_filtro[1] == 1:
+        canny_threshold_pb(var_sc.get(), var_sc_max.get())
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -270,6 +287,7 @@ def filtro_colorido():
     habilita_desabilita_menu(op_fer_desfazer, 1)
     hab_desab_filtro = [1, 0]
     var_sc.set(gmin)
+    var_sc_max.set(gmin)
 
     # desabilita
     habilita_desabilita_menu(op_fer_redimensionar, 0)  # desabilita menu Ferramentas/Redimensionar
@@ -290,6 +308,7 @@ def filtro_pretobranco():
     habilita_desabilita_menu(op_fer_desfazer, 1)
     hab_desab_filtro = [0, 1]
     var_sc.set(gmin)
+    var_sc_max.set(gmin)
 
     # desabilita
     habilita_desabilita_menu(op_fer_redimensionar, 0)   # desabilita menu Ferramentas/Redimensionar
@@ -420,10 +439,10 @@ def habilita_desabilita_frame(frame, hab_desab):
     elif frame == frame_sb:                 # frame_scalebar ------------------------
         if hab_desab == 0:
             sc['state'] = DISABLED
-            lsc['state'] = DISABLED
+            sc_max['state'] = DISABLED
         else:
             sc['state'] = NORMAL
-            lsc['state'] = NORMAL
+            sc_max['state'] = NORMAL
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -467,6 +486,7 @@ def carrega_imagem():
                 # desabilita:
                 habilita_desabilita_menu(op_fer_desfazer, 0)
                 var_sc.set(gmin)
+                var_sc_max.set(gmin)
                 habilita_desabilita_frame(frame_sb, 0)  # desabilia barra deslizante de contornos
 
 
@@ -559,17 +579,22 @@ frame_help = Frame(root, height=560)
 
 # Barra deslizante para filtro de contornos (frame_scalebar)
 # -----------------------------------------------------
-var_sc = IntVar()
 gmin = 0
 gmax = 900
+
+var_sc = IntVar()
 Label(frame_root, text='C o n t o r n o s', font=('Ar Delaney', '30', 'bold'), bg=backgroud, fg=foreground).pack()
 Label(frame_root, bg=backgroud, width=80).pack()
-sc = Scale(frame_root, label='Gera contornos', from_=gmin, to=gmax, length=500, variable=var_sc, orient=HORIZONTAL,
-           bg=backgroud, fg=foreground, font='7', command=contornos_cor)
-sc_ltext = 'mais linhas          «                        Filtro                        »          menos linhas'
-lsc = Label(frame_root, text=sc_ltext, bg=backgroud, fg=foreground, font='7')
+
+sc = Scale(frame_root, label='Gera contornos - gradiente mínimo', from_=gmin, to=gmax, length=500, variable=var_sc,
+           orient=HORIZONTAL, bg=backgroud, fg=foreground, font='7', command=contornos_cor)
 sc.pack()
-lsc.pack()
+
+var_sc_max = IntVar()
+sc_max = Scale(frame_root, label='Gera contornos - gradiente máximo', from_=gmin, to=gmax, length=500,
+               variable=var_sc_max, orient=HORIZONTAL, bg=backgroud, fg=foreground, font='7', command=contornos_cor_max)
+sc_max.pack()
+
 Label(frame_root, bg=backgroud, width=80).pack()
 
 # Canvas onde sera carregada a imagem (frame_root)
