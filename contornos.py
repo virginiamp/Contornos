@@ -4,6 +4,7 @@ Versão: 1.0
 """
 
 import os
+import re
 import cv2
 import numpy as np
 from tkinter import *
@@ -11,6 +12,7 @@ import tkinter.filedialog as fdlg
 from functools import partial
 from PIL import Image
 from PIL import ImageTk
+from ajuda_texto import TEXTO_AJUDA
 
 
 # definicao de funcoes
@@ -220,19 +222,29 @@ def trata_erro(n):
 # --------------------------------------------------------------------------------------------------------------------
 def help_window():
 
-    global tajuda
     global frame_ja
     global op_aju_fechar
 
     habilita_desabilita_frame(frame_ja, 1)          # habilita janela Ajuda
     habilita_desabilita_menu(op_aju_fechar, 1)      # habilita Menu Ajuda/Fechar
+    texto_help.yview_moveto(0)                      # sempre abre no inicio do texto
 
-    tajuda = PhotoImage(file=os.path.join(pasta_programa, 'ajuda.png'))
-    h = tajuda.height()
-    w = tajuda.width()
-    canvas_help.create_image(0, 30, anchor='nw', image=tajuda)
-    canvas_help.config(scrollregion=(0, 0, w + 10, h + 10))
-    bt_help.place(x=480, y=4)
+
+# --------------------------------------------------------------------------------------------------------------------
+def preenche_ajuda(widget, texto):
+
+    # Insere o texto da ajuda (ver ajuda_texto.py) no widget Text, aplicando as marcacoes [x]...[/x] como estilos.
+    widget.config(state=NORMAL)
+    widget.delete('1.0', END)
+    for linha in texto.splitlines():
+        tags_linha = ('tabela',) if '\t' in linha else ()
+        pos = 0
+        for marca in re.finditer(r'\[(\w)\](.*?)\[/\1\]', linha):
+            widget.insert(END, linha[pos:marca.start()], tags_linha)
+            widget.insert(END, marca.group(2), tags_linha + (marca.group(1),))
+            pos = marca.end()
+        widget.insert(END, linha[pos:] + '\n', tags_linha)
+    widget.config(state=DISABLED)                   # somente leitura
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -463,12 +475,8 @@ def habilita_desabilita_frame(frame, hab_desab):
     elif frame == frame_ja:                  # frame_help ---------------------------
         if hab_desab == 0:
             frame_help.forget()
-            bt_help.forget()
         else:
             frame_help.pack(fill=BOTH, side=TOP, expand=True)
-            vbar_help.pack(side=RIGHT, fill=Y)
-            canvas_help.pack(side=LEFT, expand=TRUE, fill=BOTH)
-            canvas_help['bg'] = 'white'
 
     elif frame == frame_sb:                 # frame_scalebar ------------------------
         if hab_desab == 0:
@@ -543,7 +551,6 @@ foreground = 'black'
 
 imagem_original = None
 cv2image = None
-tajuda = None
 img_contorno = None
 img_corrente = None
 filename = None
@@ -568,7 +575,6 @@ op_aj_sobre = 30
 op_aju_fechar = 31
 
 window_name = 'Contornos'
-pasta_programa = os.path.dirname(os.path.abspath(__file__))  # arquivos de apoio (ex.: ajuda.png) ficam junto do script
 kernel_size = 3
 porcentagem_max = 1000  # limite do redimensionamento, evita imagens enormes que esgotam a memoria
 
@@ -651,14 +657,27 @@ hbar_root.pack(side=BOTTOM, fill=X)
 hbar_root.config(command=canvas_root.xview)
 canvas_root.config(xscrollcommand=hbar_root.set, yscrollcommand=vbar_root.set)
 
-# Canvas onde sera carregada a Ajuda (frame_help)
+# Texto da Ajuda (frame_help) - o conteudo fica em ajuda_texto.py
 # -----------------------------------------------------
-canvas_help = Canvas(frame_help, bd=3, relief=GROOVE, scrollregion=(0, 0, 0, 2700))
+bt_help = Button(frame_help, text='X', font='bold', command=fecha_help_window)
+bt_help.pack(side=TOP, anchor='e')
 vbar_help = Scrollbar(frame_help, orient=VERTICAL)
-vbar_help.config(command=canvas_help.yview)
-canvas_help.config(width=500)
-canvas_help.config(yscrollcommand=vbar_help.set)
-bt_help = Button(canvas_help, text='X', font='bold', command=fecha_help_window)
+vbar_help.pack(side=RIGHT, fill=Y)
+texto_help = Text(frame_help, width=60, wrap=WORD, bd=3, relief=GROOVE, bg='white', padx=12, pady=8,
+                  font=('Calibri', 11), tabs=('130p',), cursor='arrow', yscrollcommand=vbar_help.set)
+texto_help.pack(side=LEFT, expand=True, fill=BOTH)
+vbar_help.config(command=texto_help.yview)
+
+azul = '#0070C0'
+texto_help.tag_configure('t', font=('Cambria', 14, 'bold italic'), spacing1=10, spacing3=4)
+texto_help.tag_configure('m', font=('Calibri', 11, 'bold'), foreground=azul)
+texto_help.tag_configure('b', font=('Calibri', 11, 'bold'))
+texto_help.tag_configure('i', font=('Calibri', 11, 'italic'))
+texto_help.tag_configure('u', underline=True)
+texto_help.tag_configure('e', foreground='red')
+texto_help.tag_configure('s', font=('Calibri', 11, 'italic'), foreground='red')
+texto_help.tag_configure('tabela', lmargin2='130p')   # linhas quebradas ficam alinhadas na segunda coluna
+preenche_ajuda(texto_help, TEXTO_AJUDA)
 
 estado_inicial_aplicacao()
 habilita_desabilita_menu(op_aju_fechar, 0)
