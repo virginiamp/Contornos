@@ -462,6 +462,8 @@ def carrega_imagem():
     global frame_sb
 
     filename = fdlg.askopenfilename()  # Isto te permite selecionar um arquivo
+    if not filename:  # usuario cancelou a selecao de arquivo
+        return
     if not cv2.haveImageReader(filename):  # Returns true if the specified image can be decoded by OpenCV
         trata_erro(0)
     else:
