@@ -227,7 +227,7 @@ def help_window():
     habilita_desabilita_frame(frame_ja, 1)          # habilita janela Ajuda
     habilita_desabilita_menu(op_aju_fechar, 1)      # habilita Menu Ajuda/Fechar
 
-    tajuda = PhotoImage(file='ajuda.png')
+    tajuda = PhotoImage(file=os.path.join(pasta_programa, 'ajuda.png'))
     h = tajuda.height()
     w = tajuda.width()
     canvas_help.create_image(0, 30, anchor='nw', image=tajuda)
@@ -568,6 +568,7 @@ op_aj_sobre = 30
 op_aju_fechar = 31
 
 window_name = 'Contornos'
+pasta_programa = os.path.dirname(os.path.abspath(__file__))  # arquivos de apoio (ex.: ajuda.png) ficam junto do script
 kernel_size = 3
 porcentagem_max = 1000  # limite do redimensionamento, evita imagens enormes que esgotam a memoria
 
