@@ -228,15 +228,17 @@ def help_window():
 def carrega_img_reseize_scrollbar(canvas, im, wg):
 
     global img_corrente
+    global img_contorno
     global cv2image
 
     cv2image = im.copy()
+    img_corrente = im.copy()                          # imagem OpenCV (numpy) usada ao salvar
 
     limpa_widget(wg)
-    img_corrente = cv_to_tk(im)                       # transforma imagem em PhotoImage
-    canvas.create_image(0, 0, anchor='nw', image=img_corrente)  # carrega imagem na janela principal
-    h = img_corrente.height() + 10
-    w = img_corrente.width() + 10
+    img_contorno = cv_to_tk(im)                       # PhotoImage exibida na tela (precisa manter referencia)
+    canvas.create_image(0, 0, anchor='nw', image=img_contorno)  # carrega imagem na janela principal
+    h = img_contorno.height() + 10
+    w = img_contorno.width() + 10
     canvas.config(scrollregion=(0, 0, w, h))          # formata scrollbar para tamanho da imagem carregada
 
 
