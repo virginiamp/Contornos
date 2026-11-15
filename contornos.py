@@ -3,7 +3,9 @@ Autor: Virginia Martins Perozim
 Versão: 1.0
 """
 
+import os
 import cv2
+import numpy as np
 from tkinter import *
 import tkinter.filedialog as fdlg
 from functools import partial
@@ -45,7 +47,26 @@ def save_img():
     ftypes = [('PNG', '.png'), ('BMP', '.bmp')]
     filename = fdlg.asksaveasfilename(defaultextension='.png', filetypes=ftypes, confirmoverwrite=True)
     if len(filename) > 0:
-        cv2.imwrite(filename, img_corrente)
+        salvar_imagem(filename, img_corrente)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+# cv2.imread/cv2.imwrite nao aceitam caminhos com acentos no Windows (ex.: "Área de Trabalho").
+# Por isso o arquivo e lido/gravado pelo numpy e apenas decodificado/codificado pelo OpenCV.
+def ler_imagem(caminho):
+
+    dados = np.fromfile(caminho, dtype=np.uint8)
+    if dados.size == 0:
+        return None
+    return cv2.imdecode(dados, cv2.IMREAD_COLOR)  # retorna None se nao for imagem
+
+
+def salvar_imagem(caminho, imagem):
+
+    extensao = os.path.splitext(caminho)[1] or '.png'
+    ok, dados = cv2.imencode(extensao, imagem)
+    if ok:
+        dados.tofile(caminho)
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -464,32 +485,36 @@ def carrega_imagem():
     filename = fdlg.askopenfilename()  # Isto te permite selecionar um arquivo
     if not filename:  # usuario cancelou a selecao de arquivo
         return
-    if not cv2.haveImageReader(filename):  # Returns true if the specified image can be decoded by OpenCV
-        trata_erro(0)
-    else:
-        if len(filename) > 0:
-            imagem_original = cv2.imread(filename)
-            try:
-                cv2image = imagem_original.copy()
-            except (AttributeError, cv2.error):
-                trata_erro(1)  # 'Provavelmente você está tentando abrir um arquivo que não é de imagem.'
-            except:
-                trata_erro(2)  # 'ERRO desconhecido'
-            else:
-                carrega_img_reseize_scrollbar(canvas_root, cv2image, 0)
 
-                # habilita:
-                habilita_desabilita_menu(op_arq_salvar, 1)
-                habilita_desabilita_menu(op_arquivo_fechar, 1)
-                habilita_desabilita_menu(op_fer_redimensionar, 1)
-                habilita_desabilita_menu(op_fer_fcor, 1)
-                habilita_desabilita_menu(op_fer_fpb, 1)
+    try:
+        imagem_lida = ler_imagem(filename)
+    except OSError:
+        trata_erro(0)  # 'Provavelmente voce estah tentando abrir um arquivo que estah protegido.'
+        return
+    except Exception:
+        trata_erro(2)  # 'ERRO desconhecido'
+        return
 
-                # desabilita:
-                habilita_desabilita_menu(op_fer_desfazer, 0)
-                var_sc.set(gmin)
-                var_sc_max.set(gmin)
-                habilita_desabilita_frame(frame_sb, 0)  # desabilia barra deslizante de contornos
+    if imagem_lida is None:
+        trata_erro(1)  # 'Provavelmente voce estah tentando abrir um arquivo que nao eh de imagem.'
+        return
+
+    imagem_original = imagem_lida
+    cv2image = imagem_original.copy()
+    carrega_img_reseize_scrollbar(canvas_root, cv2image, 0)
+
+    # habilita:
+    habilita_desabilita_menu(op_arq_salvar, 1)
+    habilita_desabilita_menu(op_arquivo_fechar, 1)
+    habilita_desabilita_menu(op_fer_redimensionar, 1)
+    habilita_desabilita_menu(op_fer_fcor, 1)
+    habilita_desabilita_menu(op_fer_fpb, 1)
+
+    # desabilita:
+    habilita_desabilita_menu(op_fer_desfazer, 0)
+    var_sc.set(gmin)
+    var_sc_max.set(gmin)
+    habilita_desabilita_frame(frame_sb, 0)  # desabilita barra deslizante de contornos
 
 
 # ====================================================================================================================
