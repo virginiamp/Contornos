@@ -124,7 +124,7 @@ def image_reseize(tb, ler, xtb, ytb):
     lyer = ytb + 20
 
     img_copy = imagem_original.copy()
-    icx = img_copy.shape[1]
+    altura, largura = img_copy.shape[:2]
 
     try:
         aux = int(tb.get())  # poncentagem de incremento/decremento
@@ -134,16 +134,27 @@ def image_reseize(tb, ler, xtb, ytb):
             ler['text'] = 'Campo não deve estar vazio!'
         else:
             ler['text'] = 'Valor deve ser nº inteiro!'
-    else:
-        valor = aux/100
-        fat = (icx * valor) / icx
+        return
 
-        img_reseized = cv2.resize(img_copy, None, fx=fat, fy=fat)
-        carrega_img_reseize_scrollbar(canvas_root, img_reseized, 0)
-        ler['text'] = ''
+    if aux < 1 or aux > porcentagem_max:
+        ler.place(x=lxer, y=lyer)
+        ler['text'] = f'Valor deve estar entre 1 e {porcentagem_max}!'
+        return
 
-        # habilita
-        habilita_desabilita_menu(op_fer_desfazer, 1)
+    fat = aux / 100
+    nova_largura = round(largura * fat)
+    nova_altura = round(altura * fat)
+    if nova_largura < 1 or nova_altura < 1:
+        ler.place(x=lxer, y=lyer)
+        ler['text'] = 'Porcentagem pequena demais para esta imagem!'
+        return
+
+    img_reseized = cv2.resize(img_copy, (nova_largura, nova_altura))
+    carrega_img_reseize_scrollbar(canvas_root, img_reseized, 0)
+    ler['text'] = ''
+
+    # habilita
+    habilita_desabilita_menu(op_fer_desfazer, 1)
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -558,6 +569,7 @@ op_aju_fechar = 31
 
 window_name = 'Contornos'
 kernel_size = 3
+porcentagem_max = 1000  # limite do redimensionamento, evita imagens enormes que esgotam a memoria
 
 hab_desab_filtro = [0, 0]
 
