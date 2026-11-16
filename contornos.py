@@ -7,7 +7,7 @@ import os
 import re
 import cv2
 import numpy as np
-from tkinter import *
+import tkinter as tk
 import tkinter.filedialog as fdlg
 from functools import partial
 from PIL import Image
@@ -16,14 +16,6 @@ from ajuda_texto import TEXTO_AJUDA
 
 
 # definicao de funcoes
-# --------------------------------------------------------------------------------------------------------------------
-def donothing():
-
-    filewin = Toplevel(root)
-    button = Button(filewin, text="Do nothing button")
-    button.pack()
-
-
 # --------------------------------------------------------------------------------------------------------------------
 def close_window():
 
@@ -84,13 +76,8 @@ def cv_to_tk(cv_img):
 # --------------------------------------------------------------------------------------------------------------------
 def cancelar(ler):
 
-    global op_fer_desfazer
-
     ler['text'] = ''
-    desfaz()
-
-    # desabilita
-    habilita_desabilita_menu(op_fer_desfazer, 0)
+    desfaz()  # desfaz() ja desabilita o menu Ferramentas/Desfazer
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -102,28 +89,35 @@ def desfaz():
     global frame_sb
     global op_fer_desfazer
 
-    carrega_img_reseize_scrollbar(canvas_root, imagem_original, 0)
-    vbar_root.pack(side=RIGHT, fill=Y)
-    hbar_root.pack(side=BOTTOM, fill=X)
+    carrega_img_resize_scrollbar(canvas_root, imagem_original)
+    vbar_root.pack(side=tk.RIGHT, fill=tk.Y)
+    hbar_root.pack(side=tk.BOTTOM, fill=tk.X)
 
     # habilita
     habilita_desabilita_menu(op_fer_redimensionar, 1)  # habilita menu Ferramentas/Redimensionar
 
     # desabilita
-    var_sc.set(gmin)
-    var_sc_max.set(gmin)
+    zera_barras()
     habilita_desabilita_frame(frame_sb, 0)  # desbilita barra deslizante de contornos
     habilita_desabilita_menu(op_fer_desfazer, 0)  # desbilita menu Ferramentas/Desfazer
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def image_reseize(tb, ler, xtb, ytb):
+def zera_barras():
+
+    var_sc.set(gmin)
+    var_sc_max.set(gmin)
+
+
+# --------------------------------------------------------------------------------------------------------------------
+def image_resize(tb, ler, xtb, ytb):
 
     global imagem_original
     global op_fer_desfazer
 
-    lxer = xtb
-    lyer = ytb + 20
+    def mostra_erro(mensagem):
+        ler.place(x=xtb, y=ytb + 20)  # mensagem aparece logo abaixo da caixa de texto
+        ler['text'] = mensagem
 
     img_copy = imagem_original.copy()
     altura, largura = img_copy.shape[:2]
@@ -131,28 +125,25 @@ def image_reseize(tb, ler, xtb, ytb):
     try:
         aux = int(tb.get())  # poncentagem de incremento/decremento
     except ValueError:
-        ler.place(x=lxer, y=lyer)
         if len(tb.get()) == 0:
-            ler['text'] = 'Campo não deve estar vazio!'
+            mostra_erro('Campo não deve estar vazio!')
         else:
-            ler['text'] = 'Valor deve ser nº inteiro!'
+            mostra_erro('Valor deve ser nº inteiro!')
         return
 
     if aux < 1 or aux > porcentagem_max:
-        ler.place(x=lxer, y=lyer)
-        ler['text'] = f'Valor deve estar entre 1 e {porcentagem_max}!'
+        mostra_erro(f'Valor deve estar entre 1 e {porcentagem_max}!')
         return
 
     fat = aux / 100
     nova_largura = round(largura * fat)
     nova_altura = round(altura * fat)
     if nova_largura < 1 or nova_altura < 1:
-        ler.place(x=lxer, y=lyer)
-        ler['text'] = 'Porcentagem pequena demais para esta imagem!'
+        mostra_erro('Porcentagem pequena demais para esta imagem!')
         return
 
-    img_reseized = cv2.resize(img_copy, (nova_largura, nova_altura))
-    carrega_img_reseize_scrollbar(canvas_root, img_reseized, 0)
+    img_resized = cv2.resize(img_copy, (nova_largura, nova_altura))
+    carrega_img_resize_scrollbar(canvas_root, img_resized)
     ler['text'] = ''
 
     # habilita
@@ -160,7 +151,7 @@ def image_reseize(tb, ler, xtb, ytb):
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def reseize_win():
+def resize_win():
 
     xl1, yl1 = 20, 20
     xtb1, ytb1 = 6 * xl1, yl1
@@ -168,23 +159,23 @@ def reseize_win():
     xbt2, ybt2 = xbt1 + 70, ybt1
     xbt3, ybt3 = xbt2 + 70, ybt1
 
-    resizewin = Toplevel(root)
+    resizewin = tk.Toplevel(root)
     resizewin.title('Redimensiona imagem')
     resizewin.geometry("280x120")
     resizewin.resizable(width=0, height=0)
 
-    frame_rs = Frame(resizewin)
-    frame_rs.pack(expand=True, fill=BOTH)
+    frame_rs = tk.Frame(resizewin)
+    frame_rs.pack(expand=True, fill=tk.BOTH)
 
-    lerro = Label(frame_rs, text='', fg='red')
-    Label(frame_rs, text='Porcentagem: ').place(x=xl1, y=yl1)
-    textbox1 = Entry(resizewin)
-    textbox1.insert(END, '100')
-    action_with_arg1 = partial(image_reseize, textbox1, lerro, xtb1, ytb1)
-    bt1 = Button(frame_rs, text='OK', width=8, command=action_with_arg1)
+    lerro = tk.Label(frame_rs, text='', fg='red')
+    tk.Label(frame_rs, text='Porcentagem: ').place(x=xl1, y=yl1)
+    textbox1 = tk.Entry(resizewin)
+    textbox1.insert(tk.END, '100')
+    action_with_arg1 = partial(image_resize, textbox1, lerro, xtb1, ytb1)
+    bt1 = tk.Button(frame_rs, text='OK', width=8, command=action_with_arg1)
     action_with_arg2 = partial(cancelar, lerro)
-    bt2 = Button(frame_rs, text='Cancelar', width=8, command=action_with_arg2)
-    bt3 = Button(frame_rs, text='Fechar', width=8, command=resizewin.destroy)
+    bt2 = tk.Button(frame_rs, text='Cancelar', width=8, command=action_with_arg2)
+    bt3 = tk.Button(frame_rs, text='Fechar', width=8, command=resizewin.destroy)
 
     textbox1.place(x=xtb1, y=ytb1)
     bt1.place(x=xbt1, y=ybt1)
@@ -197,7 +188,7 @@ def reseize_win():
 # --------------------------------------------------------------------------------------------------------------------
 def trata_erro(n):
 
-    errorwin = Toplevel(root)
+    errorwin = tk.Toplevel(root)
     errorwin.geometry("500x90")
 
     er, adv = '', ''
@@ -212,9 +203,9 @@ def trata_erro(n):
         er = 'ERRO #2! Desconhecido.'
         adv = ''
 
-    Label(errorwin, text=er).pack()
-    Label(errorwin, text=adv).pack()
-    Button(errorwin, width=10, text='OK', command=errorwin.destroy).place(x=220, y=50)
+    tk.Label(errorwin, text=er).pack()
+    tk.Label(errorwin, text=adv).pack()
+    tk.Button(errorwin, width=10, text='OK', command=errorwin.destroy).place(x=220, y=50)
 
     errorwin.mainloop()
 
@@ -234,21 +225,21 @@ def help_window():
 def preenche_ajuda(widget, texto):
 
     # Insere o texto da ajuda (ver ajuda_texto.py) no widget Text, aplicando as marcacoes [x]...[/x] como estilos.
-    widget.config(state=NORMAL)
-    widget.delete('1.0', END)
+    widget.config(state=tk.NORMAL)
+    widget.delete('1.0', tk.END)
     for linha in texto.splitlines():
         tags_linha = ('tabela',) if '\t' in linha else ()
         pos = 0
         for marca in re.finditer(r'\[(\w)\](.*?)\[/\1\]', linha):
-            widget.insert(END, linha[pos:marca.start()], tags_linha)
-            widget.insert(END, marca.group(2), tags_linha + (marca.group(1),))
+            widget.insert(tk.END, linha[pos:marca.start()], tags_linha)
+            widget.insert(tk.END, marca.group(2), tags_linha + (marca.group(1),))
             pos = marca.end()
-        widget.insert(END, linha[pos:] + '\n', tags_linha)
-    widget.config(state=DISABLED)                   # somente leitura
+        widget.insert(tk.END, linha[pos:] + '\n', tags_linha)
+    widget.config(state=tk.DISABLED)                   # somente leitura
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def carrega_img_reseize_scrollbar(canvas, im, wg):
+def carrega_img_resize_scrollbar(canvas, im):
 
     global img_corrente
     global img_contorno
@@ -257,7 +248,7 @@ def carrega_img_reseize_scrollbar(canvas, im, wg):
     cv2image = im.copy()
     img_corrente = im.copy()                          # imagem OpenCV (numpy) usada ao salvar
 
-    limpa_widget(wg)
+    limpa_janela_principal()
     img_contorno = cv_to_tk(im)                       # PhotoImage exibida na tela (precisa manter referencia)
     canvas.create_image(0, 0, anchor='nw', image=img_contorno)  # carrega imagem na janela principal
     h = img_contorno.height() + 10
@@ -266,114 +257,58 @@ def carrega_img_reseize_scrollbar(canvas, im, wg):
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def contornos_cor(n):
+def contorno_colorido(imagem, minimo, maximo):
 
-    global hab_desab_filtro
-
-    if hab_desab_filtro[0] == 1:
-        canny_threshold_cor(var_sc.get(), var_sc_max.get())
-    elif hab_desab_filtro[1] == 1:
-        canny_threshold_pb(var_sc.get(), var_sc_max.get())
+    # linhas coloridas (cores da imagem original) sobre fundo preto
+    bordas = cv2.Canny(cv2.blur(imagem, (3, 3)), minimo, maximo, kernel_size)
+    mascara = (bordas != 0)[:, :, None].astype(imagem.dtype)
+    return imagem * mascara
 
 
-# --------------------------------------------------------------------------------------------------------------------
-def contornos_cor_max(n1):
+def contorno_preto_branco(imagem, minimo, maximo):
 
-    global hab_desab_filtro
-
-    if hab_desab_filtro[0] == 1:
-        canny_threshold_cor(var_sc.get(), var_sc_max.get())
-    elif hab_desab_filtro[1] == 1:
-        canny_threshold_pb(var_sc.get(), var_sc_max.get())
+    # linhas pretas sobre fundo branco
+    cinza = cv2.cvtColor(imagem, cv2.COLOR_BGR2GRAY)
+    return cv2.bitwise_not(cv2.Canny(cinza, minimo, maximo, kernel_size))
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def canny_threshold_cor(val1, val2):
+def atualiza_contornos(_valor=None):
 
+    # Chamada pelas duas barras deslizantes (o Tk passa o valor da barra, que nao e usado) e ao escolher um filtro.
     global img_contorno
     global img_corrente
-    global cv2image
 
-    low_threshold = val1
-    upper_threshold = val2
-    img_blur = cv2.blur(cv2image, (3, 3))
-    detected_edges = cv2.Canny(img_blur, low_threshold, upper_threshold, kernel_size)
-    mask = detected_edges != 0
-    img_corrente = cv2image * (mask[:, :, None].astype(cv2image.dtype))
+    if filtro_ativo is None:
+        return
+
+    img_corrente = filtro_ativo(cv2image, var_sc.get(), var_sc_max.get())
     img_contorno = cv_to_tk(img_corrente)
     canvas_root.create_image(0, 0, anchor='nw', image=img_contorno)
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def canny_threshold_pb(val1, val2):
+def aplica_filtro(filtro):
 
-    global img_contorno
-    global img_corrente
-    global cv2image
-
-    low_threshold = val1
-    upper_threshold = val2
-    src_gray = cv2.cvtColor(cv2image, cv2.COLOR_BGR2GRAY)
-    edges = cv2.Canny(src_gray, low_threshold, upper_threshold, kernel_size)
-    img_corrente = cv2.bitwise_not(edges)
-    img_contorno = cv_to_tk(img_corrente)
-    canvas_root.create_image(0, 0, anchor='nw', image=img_contorno)
-
-
-# --------------------------------------------------------------------------------------------------------------------
-def filtro_colorido():
-
-    global hab_desab_filtro
-    global op_fer_redimensionar
-    global frame_sb
-    global op_fer_desfazer
+    global filtro_ativo
 
     # habilita
     habilita_desabilita_frame(frame_sb, 1)  # habilita barra deslizante de contornos
     habilita_desabilita_menu(op_fer_desfazer, 1)
-    hab_desab_filtro = [1, 0]
-    var_sc.set(gmin)
-    var_sc_max.set(gmin)
+    filtro_ativo = filtro
+    zera_barras()
 
     # desabilita
     habilita_desabilita_menu(op_fer_redimensionar, 0)  # desabilita menu Ferramentas/Redimensionar
 
-    canny_threshold_cor(0, 0)
+    atualiza_contornos()
 
 
 # --------------------------------------------------------------------------------------------------------------------
-def filtro_pretobranco():
+def limpa_janela_principal():
 
-    global hab_desab_filtro
-    global op_fer_redimensionar
-    global frame_sb
-    global op_fer_desfazer
-
-    # habilita
-    habilita_desabilita_frame(frame_sb, 1)  # habilita barra deslizante de contornos
-    habilita_desabilita_menu(op_fer_desfazer, 1)
-    hab_desab_filtro = [0, 1]
-    var_sc.set(gmin)
-    var_sc_max.set(gmin)
-
-    # desabilita
-    habilita_desabilita_menu(op_fer_redimensionar, 0)   # desabilita menu Ferramentas/Redimensionar
-
-    canny_threshold_pb(0, 0)
-
-
-# --------------------------------------------------------------------------------------------------------------------
-def limpa_widget(w1):
-
-    global hab_desab_filtro
-
-    if w1 == 0:                       # janela principal ----------------------
-        canvas_root.delete("all")
-        canvas_root['bg'] = 'white'
-    elif w1 == 1:                     # barra deslizante de contornos-----------
-        hab_desab_filtro = [0, 0]
-    elif w1 == 2:
-        pass
+    canvas_root.delete("all")
+    canvas_root['bg'] = 'white'
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -403,59 +338,8 @@ def estado_inicial_aplicacao():
 # --------------------------------------------------------------------------------------------------------------------
 def habilita_desabilita_menu(menu, flag_menu):
 
-    global menu_arquivo
-    global menu_ajuda
-    global menu_ferramentas
-
-    global op_arq_salvar
-    global op_arquivo_fechar
-    global op_fer_desfazer
-    global op_fer_redimensionar
-    global op_fer_fcor
-    global op_fer_fpb
-    global op_aju_fechar
-
-    if menu == op_arq_salvar:
-        if flag_menu == 0:
-            filemenu.entryconfigure('Salvar como...', state=DISABLED)
-        else:
-            filemenu.entryconfigure('Salvar como...', state=NORMAL)
-
-    elif menu == op_arquivo_fechar:
-        if flag_menu == 0:
-            filemenu.entryconfigure('Fechar', state=DISABLED)
-        else:
-            filemenu.entryconfigure('Fechar', state=NORMAL)
-
-    elif menu == op_fer_desfazer:
-        if flag_menu == 0:
-            editmenu.entryconfigure('Desfazer', state=DISABLED)
-        else:
-            editmenu.entryconfigure('Desfazer', state=NORMAL)
-
-    elif menu == op_fer_redimensionar:
-        if flag_menu == 0:
-            editmenu.entryconfigure('Redimensionar...', state=DISABLED)
-        else:
-            editmenu.entryconfigure('Redimensionar...', state=NORMAL)
-
-    elif menu == op_fer_fcor:
-        if flag_menu == 0:
-            editmenu.entryconfigure('Filtro Colorido', state=DISABLED)
-        else:
-            editmenu.entryconfigure('Filtro Colorido', state=NORMAL)
-
-    elif menu == op_fer_fpb:
-        if flag_menu == 0:
-            editmenu.entryconfigure('Filtro Preto e Branco', state=DISABLED)
-        else:
-            editmenu.entryconfigure('Filtro Preto e Branco', state=NORMAL)
-
-    elif menu == op_aju_fechar:
-        if flag_menu == 0:
-            helpmenu.entryconfigure('Fechar', state=DISABLED)
-        else:
-            helpmenu.entryconfigure('Fechar', state=NORMAL)
+    menu_tk, rotulo = itens_menu[menu]
+    menu_tk.entryconfigure(rotulo, state=tk.NORMAL if flag_menu else tk.DISABLED)
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -469,22 +353,17 @@ def habilita_desabilita_frame(frame, hab_desab):
         if hab_desab == 0:
             canvas_root.delete("all")
             canvas_root['bg'] = 'SystemButtonFace'
-        else:
-            pass
 
     elif frame == frame_ja:                  # frame_help ---------------------------
         if hab_desab == 0:
             frame_help.forget()
         else:
-            frame_help.pack(fill=BOTH, side=TOP, expand=True)
+            frame_help.pack(fill=tk.BOTH, side=tk.TOP, expand=True)
 
     elif frame == frame_sb:                 # frame_scalebar ------------------------
-        if hab_desab == 0:
-            sc['state'] = DISABLED
-            sc_max['state'] = DISABLED
-        else:
-            sc['state'] = NORMAL
-            sc_max['state'] = NORMAL
+        estado = tk.NORMAL if hab_desab else tk.DISABLED
+        sc['state'] = estado
+        sc_max['state'] = estado
 
 
 # --------------------------------------------------------------------------------------------------------------------
@@ -492,7 +371,6 @@ def carrega_imagem():
 
     global imagem_original
     global filename
-    global cv2image
 
     global op_arq_salvar
     global op_arquivo_fechar
@@ -500,7 +378,6 @@ def carrega_imagem():
     global op_fer_redimensionar
     global op_fer_fcor
     global op_fer_fpb
-    global op_aju_fechar
     global frame_sb
 
     filename = fdlg.askopenfilename()  # Isto te permite selecionar um arquivo
@@ -521,8 +398,7 @@ def carrega_imagem():
         return
 
     imagem_original = imagem_lida
-    cv2image = imagem_original.copy()
-    carrega_img_reseize_scrollbar(canvas_root, cv2image, 0)
+    carrega_img_resize_scrollbar(canvas_root, imagem_original)
 
     # habilita:
     habilita_desabilita_menu(op_arq_salvar, 1)
@@ -533,8 +409,7 @@ def carrega_imagem():
 
     # desabilita:
     habilita_desabilita_menu(op_fer_desfazer, 0)
-    var_sc.set(gmin)
-    var_sc_max.set(gmin)
+    zera_barras()
     habilita_desabilita_frame(frame_sb, 0)  # desabilita barra deslizante de contornos
 
 
@@ -545,8 +420,7 @@ def carrega_imagem():
 # definicao de constantes
 # --------------------------------------------------------------------------------------------------------------------
 janela_padrao = '1200x560'
-# backgroud = 'SystemButtonFace'
-backgroud = 'white'
+background = 'white'
 foreground = 'black'
 
 imagem_original = None
@@ -554,44 +428,36 @@ cv2image = None
 img_contorno = None
 img_corrente = None
 filename = None
-filename1 = None
 
 frame_jp = 'Janela Principal'
 frame_ja = 'Janela Ajuda'
 frame_sb = 'Scale Bar'
 
-menu_arquivo = 'Menu Arquivo'
-op_arq_abrir = 10
 op_arq_salvar = 11
 op_arquivo_fechar = 12
-op_arq_sair = 13
-menu_ferramentas = 'Menu Ferramentas'
 op_fer_desfazer = 20
 op_fer_redimensionar = 21
 op_fer_fcor = 22
 op_fer_fpb = 23
-menu_ajuda = 'Menu Ajuda'
-op_aj_sobre = 30
 op_aju_fechar = 31
 
-window_name = 'Contornos'
 kernel_size = 3
 porcentagem_max = 1000  # limite do redimensionamento, evita imagens enormes que esgotam a memoria
 
-hab_desab_filtro = [0, 0]
+filtro_ativo = None  # contorno_colorido, contorno_preto_branco ou None
 
 # Janela Principal
 # --------------------------------------------------------------------------------------------------------------------
-root = Tk()  # janela principal
+root = tk.Tk()  # janela principal
 root.title('Contornos')
 root.geometry(janela_padrao)
 
 # Menu Principal
 # ----------------------------------------------------
-menubar = Menu(root)
-filemenu = Menu(menubar, tearoff=0)
-editmenu = Menu(menubar, tearoff=0)
-helpmenu = Menu(menubar, tearoff=0)
+menubar = tk.Menu(root)
+filemenu = tk.Menu(menubar, tearoff=0)
+editmenu = tk.Menu(menubar, tearoff=0)
+helpmenu = tk.Menu(menubar, tearoff=0)
 
 # Menu File
 # ----------------------------------------------------
@@ -607,9 +473,9 @@ filemenu.add_command(label="Sair", command=root.destroy)
 menubar.add_cascade(label="Ferramentas", menu=editmenu)
 editmenu.add_command(label="Desfazer", command=desfaz)
 editmenu.add_separator()
-editmenu.add_command(label="Redimensionar...", command=reseize_win)
-editmenu.add_command(label="Filtro Colorido", command=filtro_colorido)
-editmenu.add_command(label="Filtro Preto e Branco", command=filtro_pretobranco)
+editmenu.add_command(label="Redimensionar...", command=resize_win)
+editmenu.add_command(label="Filtro Colorido", command=partial(aplica_filtro, contorno_colorido))
+editmenu.add_command(label="Filtro Preto e Branco", command=partial(aplica_filtro, contorno_preto_branco))
 
 # Menu Help
 # ----------------------------------------------------
@@ -618,64 +484,81 @@ helpmenu.add_command(label="Sobre", command=help_window)
 helpmenu.add_separator()
 helpmenu.add_command(label="Fechar", command=fecha_help_window)
 
+# Itens de menu que sao habilitados/desabilitados durante o uso: codigo -> (menu, rotulo)
+itens_menu = {
+    op_arq_salvar: (filemenu, 'Salvar como...'),
+    op_arquivo_fechar: (filemenu, 'Fechar'),
+    op_fer_desfazer: (editmenu, 'Desfazer'),
+    op_fer_redimensionar: (editmenu, 'Redimensionar...'),
+    op_fer_fcor: (editmenu, 'Filtro Colorido'),
+    op_fer_fpb: (editmenu, 'Filtro Preto e Branco'),
+    op_aju_fechar: (helpmenu, 'Fechar'),
+}
+
 # cria area (Frame) com scrollbar para incluir figura
 # --------------------------------------------------------------------------------------------------------------------
-frame_root = Frame(root, height=560)
-frame_root.pack(fill=BOTH, side=LEFT, expand=True)
-frame_root['bg'] = backgroud
-frame_help = Frame(root, height=560)
+frame_root = tk.Frame(root, height=560)
+frame_root.pack(fill=tk.BOTH, side=tk.LEFT, expand=True)
+frame_root['bg'] = background
+frame_help = tk.Frame(root, height=560)
 
 # Barra deslizante para filtro de contornos (frame_scalebar)
 # -----------------------------------------------------
 gmin = 0
 gmax = 900
 
-var_sc = IntVar()
-Label(frame_root, text='C o n t o r n o s', font=('Ar Delaney', '30', 'bold'), bg=backgroud, fg=foreground).pack()
-Label(frame_root, bg=backgroud, width=80).pack()
+tk.Label(frame_root, text='C o n t o r n o s', font=('Ar Delaney', '30', 'bold'), bg=background, fg=foreground).pack()
+tk.Label(frame_root, bg=background, width=80).pack()
 
-sc = Scale(frame_root, label='Gera contornos - gradiente mínimo', from_=gmin, to=gmax, length=500, variable=var_sc,
-           orient=HORIZONTAL, bg=backgroud, fg=foreground, font='7', command=contornos_cor)
-sc.pack()
 
-var_sc_max = IntVar()
-sc_max = Scale(frame_root, label='Gera contornos - gradiente máximo', from_=gmin, to=gmax, length=500,
-               variable=var_sc_max, orient=HORIZONTAL, bg=backgroud, fg=foreground, font='7', command=contornos_cor_max)
-sc_max.pack()
+def cria_barra(rotulo, variavel):
 
-Label(frame_root, bg=backgroud, width=80).pack()
+    barra = tk.Scale(frame_root, label=rotulo, from_=gmin, to=gmax, length=500, variable=variavel,
+                     orient=tk.HORIZONTAL, bg=background, fg=foreground, font='7', command=atualiza_contornos)
+    barra.pack()
+    return barra
+
+
+var_sc = tk.IntVar()
+sc = cria_barra('Gera contornos - gradiente mínimo', var_sc)
+var_sc_max = tk.IntVar()
+sc_max = cria_barra('Gera contornos - gradiente máximo', var_sc_max)
+
+tk.Label(frame_root, bg=background, width=80).pack()
 
 # Canvas onde sera carregada a imagem (frame_root)
 # -----------------------------------------------------
-canvas_root = Canvas(frame_root, bd=3, relief=GROOVE, scrollregion=(0, 0, 100, 100))  # SUNKEN, RAISED, GROOVE, RIDGE
-canvas_root.pack(side=TOP, expand=True, fill=BOTH)
-vbar_root = Scrollbar(canvas_root, orient=VERTICAL)
-vbar_root.pack(side=RIGHT, fill=Y)
+canvas_root = tk.Canvas(frame_root, bd=3, relief=tk.GROOVE, scrollregion=(0, 0, 100, 100))  # SUNKEN, RAISED, GROOVE, RIDGE
+canvas_root.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
+vbar_root = tk.Scrollbar(canvas_root, orient=tk.VERTICAL)
+vbar_root.pack(side=tk.RIGHT, fill=tk.Y)
 vbar_root.config(command=canvas_root.yview)
-hbar_root = Scrollbar(canvas_root, orient=HORIZONTAL)
-hbar_root.pack(side=BOTTOM, fill=X)
+hbar_root = tk.Scrollbar(canvas_root, orient=tk.HORIZONTAL)
+hbar_root.pack(side=tk.BOTTOM, fill=tk.X)
 hbar_root.config(command=canvas_root.xview)
 canvas_root.config(xscrollcommand=hbar_root.set, yscrollcommand=vbar_root.set)
 
 # Texto da Ajuda (frame_help) - o conteudo fica em ajuda_texto.py
 # -----------------------------------------------------
-bt_help = Button(frame_help, text='X', font='bold', command=fecha_help_window)
-bt_help.pack(side=TOP, anchor='e')
-vbar_help = Scrollbar(frame_help, orient=VERTICAL)
-vbar_help.pack(side=RIGHT, fill=Y)
-texto_help = Text(frame_help, width=60, wrap=WORD, bd=3, relief=GROOVE, bg='white', padx=12, pady=8,
+bt_help = tk.Button(frame_help, text='X', font='bold', command=fecha_help_window)
+bt_help.pack(side=tk.TOP, anchor='e')
+vbar_help = tk.Scrollbar(frame_help, orient=tk.VERTICAL)
+vbar_help.pack(side=tk.RIGHT, fill=tk.Y)
+texto_help = tk.Text(frame_help, width=60, wrap=tk.WORD, bd=3, relief=tk.GROOVE, bg='white', padx=12, pady=8,
                   font=('Calibri', 11), tabs=('130p',), cursor='arrow', yscrollcommand=vbar_help.set)
-texto_help.pack(side=LEFT, expand=True, fill=BOTH)
+texto_help.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
 vbar_help.config(command=texto_help.yview)
 
 azul = '#0070C0'
+negrito = ('Calibri', 11, 'bold')
+italico = ('Calibri', 11, 'italic')
 texto_help.tag_configure('t', font=('Cambria', 14, 'bold italic'), spacing1=10, spacing3=4)
-texto_help.tag_configure('m', font=('Calibri', 11, 'bold'), foreground=azul)
-texto_help.tag_configure('b', font=('Calibri', 11, 'bold'))
-texto_help.tag_configure('i', font=('Calibri', 11, 'italic'))
+texto_help.tag_configure('m', font=negrito, foreground=azul)
+texto_help.tag_configure('b', font=negrito)
+texto_help.tag_configure('i', font=italico)
 texto_help.tag_configure('u', underline=True)
 texto_help.tag_configure('e', foreground='red')
-texto_help.tag_configure('s', font=('Calibri', 11, 'italic'), foreground='red')
+texto_help.tag_configure('s', font=italico, foreground='red')
 texto_help.tag_configure('tabela', lmargin2='130p')   # linhas quebradas ficam alinhadas na segunda coluna
 preenche_ajuda(texto_help, TEXTO_AJUDA)
 
