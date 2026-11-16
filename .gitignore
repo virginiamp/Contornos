@@ -1,0 +1,7 @@
+# Arquivos gerados automaticamente pelo Python
+__pycache__/
+*.pyc
+
+# Ambiente virtual
+.venv/
+venv/
