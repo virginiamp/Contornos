@@ -58,3 +58,30 @@ O programa pode ser iniciado a partir de qualquer pasta, desde que o caminho par
 - `contornos.py`: o programa.
 - `ajuda_texto.py`: o texto da janela de Ajuda. Para alterar a ajuda, edite esse arquivo. As marcações de formatação estão explicadas no início dele.
 - `requirements.txt`: as bibliotecas necessárias.
+
+## Histórico de versões
+
+### 1.1
+
+Correções:
+
+- Abrir e salvar imagens em pastas com acento ou ç (por exemplo, "Área de Trabalho") agora funciona.
+- Cancelar a janela de **Abrir...** não mostra mais a mensagem "ERRO #0".
+- **Salvar como...** agora funciona logo depois de abrir ou redimensionar a imagem, sem precisar aplicar um filtro antes.
+- **Redimensionar...** recusa valores inválidos (0, negativos, acima de 1000% ou pequenos demais para a imagem) com uma mensagem, em vez de dar erro.
+- A janela **Redimensionar...** bloqueia a janela principal enquanto está aberta. Antes era possível fechar a imagem ou aplicar um filtro com ela aberta e deixar o programa num estado inconsistente.
+- Erros ao salvar (formato não suportado, pasta sem permissão) agora mostram uma mensagem explicando o problema.
+- A ajuda funciona com o programa iniciado a partir de qualquer pasta.
+- Removida uma cor que só existe no Windows e impediria o programa de abrir em outros sistemas.
+
+Melhorias:
+
+- A ajuda passou a ser texto formatado dentro do programa (arquivo `ajuda_texto.py`), no lugar de uma imagem, e foi atualizada com as novas mensagens de erro.
+- Mensagens de erro de **Abrir...** usam a caixa de erro padrão do sistema.
+- As barras de gradiente ficaram mais leves em fotos grandes: o filtro só é recalculado quando a barra para de se mover.
+- Código reorganizado em uma classe, sem variáveis globais, com remoção de código morto e de trechos duplicados.
+- Adicionados `README.md` e `requirements.txt`.
+
+### 1.0
+
+Versão inicial.
