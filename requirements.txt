@@ -1,0 +1,4 @@
+# Testado com Python 3.12, opencv 5.0, numpy 2.5 e pillow 13.0
+opencv-python
+numpy
+pillow

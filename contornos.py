@@ -26,6 +26,7 @@ KERNEL_SIZE = 3
 PORCENTAGEM_MAX = 1000  # limite do redimensionamento, evita imagens enormes que esgotam a memoria
 GMIN = 0                # valores minimo e maximo das barras deslizantes de contornos
 GMAX = 900
+ATRASO_BARRA_MS = 150   # tempo que a barra deslizante precisa ficar parada para o filtro ser recalculado
 
 ERROS_ABRIR = {
     0: ('ERRO #0! Arquivo não pode ser aberto.',
@@ -50,16 +51,22 @@ def ler_imagem(caminho):
 
 def salvar_imagem(caminho, imagem):
 
+    # Levanta ValueError se o formato (extensao) nao for suportado e OSError se nao conseguir gravar o arquivo.
     extensao = os.path.splitext(caminho)[1] or '.png'
-    ok, dados = cv2.imencode(extensao, imagem)
-    if ok:
-        dados.tofile(caminho)
+    try:
+        ok, dados = cv2.imencode(extensao, imagem)
+    except cv2.error:
+        ok = False
+    if not ok:
+        raise ValueError(f'formato não suportado: {extensao}')
+    dados.tofile(caminho)
 
 
 def cv_to_tk(cv_img):
 
-    image = cv2.cvtColor(cv_img, cv2.COLOR_BGRA2RGB)
-    return ImageTk.PhotoImage(Image.fromarray(image))
+    # o OpenCV guarda as cores em BGR (ou 1 canal, no filtro preto e branco); o Tk/Pillow espera RGB
+    conversao = cv2.COLOR_GRAY2RGB if cv_img.ndim == 2 else cv2.COLOR_BGR2RGB
+    return ImageTk.PhotoImage(Image.fromarray(cv2.cvtColor(cv_img, conversao)))
 
 
 def contorno_colorido(imagem, minimo, maximo):
@@ -108,6 +115,7 @@ class Contornos:
         self.img_corrente = None      # imagem OpenCV (numpy) exibida no momento; e a que sera salva
         self.img_tela = None          # PhotoImage exibida na tela (precisa manter referencia)
         self.filtro_ativo = None      # contorno_colorido, contorno_preto_branco ou None
+        self.atualizacao_pendente = None  # recalculo do filtro agendado pelas barras deslizantes
 
         root.title('Contornos')
         root.geometry(JANELA_PADRAO)
@@ -193,7 +201,7 @@ class Contornos:
     def _cria_barra(self, pai, rotulo, variavel):
 
         barra = tk.Scale(pai, label=rotulo, from_=GMIN, to=GMAX, length=500, variable=variavel,
-                         orient=tk.HORIZONTAL, bg=FUNDO, fg=FRENTE, font='7', command=self.atualiza_contornos)
+                         orient=tk.HORIZONTAL, bg=FUNDO, fg=FRENTE, font='7', command=self.barra_movida)
         barra.pack()
         return barra
 
@@ -221,7 +229,7 @@ class Contornos:
         self.texto_help.tag_configure('e', foreground='red')
         self.texto_help.tag_configure('s', font=italico, foreground='red')
         self.texto_help.tag_configure('tabela', lmargin2='130p')  # linhas quebradas ficam alinhadas na 2a coluna
-        preenche_ajuda(self.texto_help, TEXTO_AJUDA)
+        preenche_ajuda(self.texto_help, TEXTO_AJUDA.replace('{PORCENTAGEM_MAX}', str(PORCENTAGEM_MAX)))
 
     # ----------------------------------------------------------------------------------------------------------------
     # estado da interface
@@ -245,8 +253,9 @@ class Contornos:
     def estado_inicial_aplicacao(self):
 
         # tambem usado pelo menu Arquivo/Fechar
+        self.cancela_atualizacao_pendente()
         self.canvas.delete("all")
-        self.canvas['bg'] = 'SystemButtonFace'
+        self.canvas['bg'] = self.root.cget('bg')  # cor padrao do sistema ('SystemButtonFace' so existe no Windows)
         self.habilita_barras(False)
         for nome in ('salvar', 'fechar', 'desfazer', 'redimensionar', 'filtro_cor', 'filtro_pb'):
             self.habilita_menu(nome, False)
@@ -289,8 +298,18 @@ class Contornos:
 
         ftypes = [('PNG', '.png'), ('BMP', '.bmp')]
         filename = fdlg.asksaveasfilename(defaultextension='.png', filetypes=ftypes, confirmoverwrite=True)
-        if len(filename) > 0:
+        if not filename:  # usuario cancelou
+            return
+
+        try:
             salvar_imagem(filename, self.img_corrente)
+        except ValueError:
+            messagebox.showerror('Contornos', 'ERRO! Formato de arquivo não suportado.',
+                                 detail='Salve a imagem com a extensão .png ou .bmp.', parent=self.root)
+        except OSError:
+            messagebox.showerror('Contornos', 'ERRO! Não foi possível salvar o arquivo.',
+                                 detail='Verifique se você tem permissão para gravar nessa pasta e se o arquivo '
+                                        'não está aberto em outro programa.', parent=self.root)
 
     def trata_erro(self, n):
 
@@ -303,6 +322,7 @@ class Contornos:
     def mostra_imagem(self, im):
 
         # mostra uma nova imagem base (aberta, redimensionada ou desfeita), sem filtro
+        self.cancela_atualizacao_pendente()  # evita que um recalculo agendado aplique o filtro sobre esta imagem
         self.imagem_base = im.copy()
         self.img_corrente = im.copy()
 
@@ -340,11 +360,25 @@ class Contornos:
         # desabilita
         self.habilita_menu('redimensionar', False)
 
-        self.atualiza_contornos()
+        self.cancela_atualizacao_pendente()
+        self.atualiza_contornos()  # ao escolher o filtro, aplica na hora (sem esperar)
 
-    def atualiza_contornos(self, _valor=None):
+    def barra_movida(self, _valor=None):
 
-        # Chamada pelas duas barras deslizantes (o Tk passa o valor da barra, que nao e usado) e ao escolher um filtro.
+        # Chamada pelas barras deslizantes a cada movimento (o Tk passa o valor da barra, que nao e usado).
+        # Em fotos grandes o filtro demora, entao so recalcula quando a barra fica parada por ATRASO_BARRA_MS.
+        self.cancela_atualizacao_pendente()
+        self.atualizacao_pendente = self.root.after(ATRASO_BARRA_MS, self.atualiza_contornos)
+
+    def cancela_atualizacao_pendente(self):
+
+        if self.atualizacao_pendente is not None:
+            self.root.after_cancel(self.atualizacao_pendente)
+            self.atualizacao_pendente = None
+
+    def atualiza_contornos(self):
+
+        self.atualizacao_pendente = None
         if self.filtro_ativo is None:
             return
 
@@ -380,6 +414,12 @@ class Contornos:
         bt1.place(x=xbt1, y=ybt1)
         bt2.place(x=xbt2, y=ybt2)
         bt3.place(x=xbt3, y=ybt3)
+
+        # Janela modal: enquanto estiver aberta, a janela principal nao responde. Assim nao e possivel fechar a
+        # imagem, aplicar um filtro ou abrir outra janela de redimensionamento com esta aberta.
+        resizewin.transient(self.root)
+        resizewin.grab_set()
+        textbox1.focus_set()
 
     def image_resize(self, tb, ler, xtb, ytb):
 

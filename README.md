@@ -7,7 +7,7 @@ Autora: Virginia Martins Perozim
 ## Requisitos
 
 - Python 3 (testado com Python 3.12) com Tkinter. O instalador oficial do Python para Windows já inclui o Tkinter.
-- Bibliotecas `opencv-python` e `pillow`.
+- Bibliotecas `opencv-python`, `numpy` e `pillow`, listadas em `requirements.txt`.
 
 ## Instalação
 
@@ -17,14 +17,14 @@ No Windows (PowerShell):
 
 ```powershell
 python -m venv .venv
-.\.venv\Scripts\pip.exe install opencv-python pillow
+.\.venv\Scripts\pip.exe install -r requirements.txt
 ```
 
 No Linux ou macOS:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install opencv-python pillow
+.venv/bin/pip install -r requirements.txt
 ```
 
 ## Como rodar
@@ -57,3 +57,4 @@ O programa pode ser iniciado a partir de qualquer pasta, desde que o caminho par
 
 - `contornos.py`: o programa.
 - `ajuda_texto.py`: o texto da janela de Ajuda. Para alterar a ajuda, edite esse arquivo. As marcações de formatação estão explicadas no início dele.
+- `requirements.txt`: as bibliotecas necessárias.

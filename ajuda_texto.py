@@ -12,6 +12,9 @@ Para alterar a ajuda basta editar o texto abaixo. Marcacoes disponiveis:
 
 Linhas que contem TAB (\t) sao exibidas como tabela: o texto apos o TAB
 fica alinhado na segunda coluna, inclusive quando quebra de linha.
+
+{PORCENTAGEM_MAX} e substituido pelo limite de redimensionamento definido em
+contornos.py, para que a ajuda acompanhe o valor usado pelo programa.
 """
 
 TEXTO_AJUDA = """\
@@ -51,7 +54,7 @@ Na barra de tarefas é apresentado o Menu Principal que inclui as opções: [m]'
 \t[m]'Ferramentas'[/m]
 \t   - [m]'Desfazer'[/m]
 
-[b]Menu[/b] [m]'Salvar como...'[/m]: selecionando esta opção uma janela de diretórios será aberta para que você possa escolher onde deseja salvar a imagem que está carregada na tela principal do aplicativo. O aplicativo permite que a imagem seja salva em formato PNG ou BMP, sendo PNG o formato padrão.
+[b]Menu[/b] [m]'Salvar como...'[/m]: selecionando esta opção uma janela de diretórios será aberta para que você possa escolher onde deseja salvar a imagem que está carregada na tela principal do aplicativo. O aplicativo permite que a imagem seja salva em formato PNG ou BMP, sendo PNG o formato padrão. Caso o aplicativo não consiga salvar a imagem uma mensagem de erro será gerada. Veja a [s]Seção de Erros[/s] para mais informações.
 
 [u]Estado inicial:[/u]\tDesabilitado.
 [u]Habilitado:[/u]\tQuando houver imagem carregada na janela principal do aplicativo.
@@ -97,11 +100,11 @@ Na barra de tarefas é apresentado o Menu Principal que inclui as opções: [m]'
 \t[m]'Ferramentas'[/m]
 \t   - [m]'Redimensionar...'[/m]
 
-[b]Menu[/b] [m]'Redimensionar...'[/m]: selecionando esta opção uma nova janela será aberta para que você possa determinar um fator de redimensionamento da sua imagem original.
+[b]Menu[/b] [m]'Redimensionar...'[/m]: selecionando esta opção uma nova janela será aberta para que você possa determinar um fator de redimensionamento da sua imagem original. Enquanto esta janela estiver aberta, a janela principal do aplicativo não poderá ser usada.
 
 Na [b]caixa de texto[/b] [m]'Porcentagem:'[/m] você poderá incluir o valor, em porcentagem, que deseja que sua nova imagem tenha em relação à imagem original. O valor padrão é 100, ou seja, nenhuma mudança (100% da imagem original).
 
-O valor inserido deve ser um número inteiro entre 1 e 1000, caso contrário um erro aparecerá abaixo da caixa de texto. Veja a [s]Seção de Erros[/s] para mais informações.
+O valor inserido deve ser um número inteiro entre 1 e {PORCENTAGEM_MAX}, caso contrário um erro aparecerá abaixo da caixa de texto. Veja a [s]Seção de Erros[/s] para mais informações.
 
 Clicando no [b]botão[/b] [m]'OK'[/m] você confirma a alteração e será mostrada sua nova imagem na janela principal do aplicativo. A janela de redimensionamento permanece aberta.
 
@@ -187,6 +190,12 @@ A nova imagem terá as linhas pretas e o fundo branco. Você poderá graduar a q
 
 [e]ERRO #2! Desconhecido.[/e]
 
+[b]Erros do Menu[/b] [m]'Salvar como...'[/m]: uma janela separada será aberta com a descrição do problema e uma sugestão para correção.
+
+[e]ERRO! Formato de arquivo não suportado.[/e]: este erro ocorrerá se o nome do arquivo tiver uma extensão que o aplicativo não reconhece como formato de imagem. Salve a imagem com a extensão .png ou .bmp.
+
+[e]ERRO! Não foi possível salvar o arquivo.[/e]: este erro ocorrerá se você não tiver permissão para gravar na pasta escolhida ou se o arquivo estiver aberto em outro programa.
+
 [b]Erros do Menu[/b] [m]'Redimensionar...'[/m]: o erro irá aparecer embaixo da caixa de texto [m]'Porcentagem:'[/m]. Em todos os casos o erro desaparecerá quando:
    - o [b]botão[/b] [m]'OK'[/m] for clicado e o campo estiver preenchido corretamente;
    - o [b]botão[/b] [m]'Cancelar'[/m] for clicado.
@@ -195,7 +204,7 @@ A nova imagem terá as linhas pretas e o fundo branco. Você poderá graduar a q
 
 [e]Valor deve ser nº inteiro![/e]: este erro ocorrerá se a caixa de texto tiver um valor que não seja um número inteiro e o [b]botão[/b] [m]'OK'[/m] for clicado.
 
-[e]Valor deve estar entre 1 e 1000![/e]: este erro ocorrerá se a caixa de texto tiver um número menor que 1 (zero ou negativo) ou maior que 1000 e o [b]botão[/b] [m]'OK'[/m] for clicado.
+[e]Valor deve estar entre 1 e {PORCENTAGEM_MAX}![/e]: este erro ocorrerá se a caixa de texto tiver um número menor que 1 (zero ou negativo) ou maior que {PORCENTAGEM_MAX} e o [b]botão[/b] [m]'OK'[/m] for clicado.
 
 [e]Porcentagem pequena demais para esta imagem![/e]: este erro ocorrerá se, com a porcentagem escolhida, a nova imagem ficar com menos de 1 pixel de largura ou de altura (por exemplo, 1% de uma imagem pequena).
 """
